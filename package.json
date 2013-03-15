@@ -1,0 +1,24 @@
+{
+  "author": {
+    "name": "Sascha Reuter",
+    "email": "sascha@tape.io"
+  },
+  "name": "statsd-leftronic-backend",
+  "description": "Pluggable backend for StatsD, which publishes stats to the Leftronic Dashboard API.",
+  "version": "0.0.1",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/sreuter/statsd-leftronic-backend.git"
+  },
+  "keywords": [
+    "dashboard",
+    "analytics",
+    "real-time",
+    "socket"
+  ],
+  "main": "index.js",
+  "devDependencies": {},
+  "dependencies": {
+    "leftronic-request": "0.0.3"
+  }
+}
