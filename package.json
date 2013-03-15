@@ -5,7 +5,7 @@
   },
   "name": "statsd-leftronic-backend",
   "description": "Pluggable backend for StatsD, which publishes stats to the Leftronic Dashboard API.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "repository": {
     "type": "git",
     "url": "git://github.com/sreuter/statsd-leftronic-backend.git"
@@ -19,6 +19,6 @@
   "main": "index.js",
   "devDependencies": {},
   "dependencies": {
-    "leftronic-request": "0.0.3"
+    "leftronic-request": "~0.0.4"
   }
 }
