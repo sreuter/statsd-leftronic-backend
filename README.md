@@ -7,7 +7,7 @@ publishes stats to the [Leftronic Dashboard API](https://www.leftronic.com/).
 
 ## Requirements
 
-* An active [Librato Metrics](https://metrics.librato.com/sign_up) account.
+* An active [Leftronic Dashboard](https://www.leftronic.com/) account.
 
 ## Usage
 
