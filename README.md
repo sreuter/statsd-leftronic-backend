@@ -2,7 +2,7 @@
 
 ## Overview
 
-This is a pluggable backend for [StatsD][statsd], which
+This is a pluggable backend for [StatsD](https://github.com/etsy/statsd/), which
 publishes stats to the [Leftronic Dashboard API](https://www.leftronic.com/).
 
 ## Requirements
