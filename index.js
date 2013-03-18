@@ -108,7 +108,6 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
     if(data.length > 0) {
       console.log('Sending POST data (' + (data_send_count + 1) + '/' + data.length + ') ...');
       console.log(util.inspect(data, false, 5, true));
-  } else {
       self.client.sendData(data[data_send_count], function(err, res, body) {
         console.log(err || body);
         data_send_count += 1;
