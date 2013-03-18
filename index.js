@@ -72,9 +72,25 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
   }
 */
 
-  var data = {
-    streams: []
+  // We have to split streams into seperate post requests as the
+  // Leftronic API only allows 32 streams in one single post.
+
+  // Prepare function to extend data object and return post_counter;
+
+  function extend_post_data(stream_counter, stream_limit, data) {
+    var post_count = Math.floor(stream_count/stream_limit);
+    if(! data[post_count]) {
+      data[post_count] = {
+        streams: []
+      };
+    }
+    return(post_count);
   }
+
+  var data = [];
+
+  var stream_count = 0,
+      stream_limit = 32;
 
   var globalPrefix = self.config.globalPrefix ? self.config.globalPrefix : 'stats';
 
@@ -82,37 +98,57 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
     if(out.hasOwnProperty(i)) {
       if(i === 'gauges') {
         for(var j in out[i]) {
-          if(out.hasOwnProperty(i)) {
-            data.streams.push({
+          if(out[i].hasOwnProperty(j)) {
+            var post_count = extend_post_data(stream_count, stream_limit, data);
+            data[post_count].streams.push({
               streamName: globalPrefix + '.' + i + '.' + j,
               point: out[i][j]
             });
+            stream_count +=1;
           }
         }
       } else if(i === 'counters') {
         for(var j in out[i]) {
-          if(out.hasOwnProperty(i)) {
-            data.streams.push({
+          if(out[i].hasOwnProperty(j)) {
+            var post_count = extend_post_data(stream_count, stream_limit, data);
+            data[post_count].streams.push({
               streamName: globalPrefix + '.' + i + '.' + j + '.count',
               point: out[i][j]
             });
+            stream_count += 1;
           }
         }
       } else if(i === 'counter_rates') {
         for(var j in out[i]) {
-          if(out.hasOwnProperty(i)) {
-            data.streams.push({
+          if(out[i].hasOwnProperty(j)) {
+            var post_count = extend_post_data(stream_count, stream_limit, data);
+            data[post_count].streams.push({
               streamName: globalPrefix + '.counters.' + j + '.rate',
               point: out[i][j]
             });
+            stream_count += 1;
           }
         }
       }
     }
   }
-  self.client.sendData(data, function(err, res, body) {
-    console.log(err || body);
-  })
+
+  var data_send_count = 0;
+
+  (function send_data() {
+    if(data.length > 0) {
+      console.log('Sending POST data (' + (data_send_count + 1) + '/' + data.length + ') ...');
+      self.client.sendData(data[data_send_count], function(err, res, body) {
+        console.log(err || body);
+        data_send_count += 1;
+
+        if(data.length > data_send_count) {
+          send_data();
+        }
+
+      });
+    }
+  }());
 
 };
 
@@ -124,7 +160,7 @@ LeftronicBackend.prototype.status = function(write) {
 
 exports.init = function(startupTime, config, events) {
   if(typeof config.leftronic.key !== 'string') {
-    util.log("Error: Missing config.leftronic.key");
+    util.log('Error: Missing config.leftronic.key');
     return false;
   }
 
