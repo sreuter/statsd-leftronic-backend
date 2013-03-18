@@ -22,11 +22,6 @@ function LeftronicBackend(startupTime, config, emitter){
   this.lastException = startupTime;
   this.config = config.leftronic || {};
 
-  this.statsCache = {
-    counters: {},
-    timers: {}
-  };
-
   this.client = require('leftronic-request').createClient(this.config.key);
 
   // attach
@@ -38,37 +33,11 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
   var self = this;
   console.log('Flushing stats at', new Date(timestamp * 1000).toString());
 
-  // merge with previously sent values
-  Object.keys(self.statsCache).forEach(function(type) {
-    if(!metrics[type]) return;
-    Object.keys(metrics[type]).forEach(function(name) {
-      var value = metrics[type][name];
-      self.statsCache[type][name] || (self.statsCache[type][name] = 0);
-      self.statsCache[type][name] += value;
-    });
-  });
-
-  var out = {
-    counters: this.statsCache.counters,
-    timers: this.statsCache.timers,
-    gauges: metrics.gauges,
-    timer_data: metrics.timer_data,
-    counter_rates: metrics.counter_rates,
-    sets: function (vals) {
-      var ret = {};
-      for (val in vals) {
-        ret[val] = vals[val].values();
-      }
-      return ret;
-    }(metrics.sets),
-    pctThreshold: metrics.pctThreshold
-  };
-
 /*
   if(this.config.prettyprint) {
-    console.log(util.inspect(out, false, 5, true));
+    console.log(util.inspect(metrics, false, 5, true));
   } else {
-    console.log(out);
+    console.log(metrics);
   }
 */
 
@@ -77,7 +46,7 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
 
   // Prepare function to extend data object and return post_counter;
 
-  function extend_post_data(stream_counter, stream_limit, data) {
+  function extend_post_data(stream_counter, stream_limit, metrics) {
     var post_count = Math.floor(stream_count/stream_limit);
     if(! data[post_count]) {
       data[post_count] = {
@@ -94,37 +63,37 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
 
   var globalPrefix = self.config.globalPrefix ? self.config.globalPrefix : 'stats';
 
-  for(var i in out) {
-    if(out.hasOwnProperty(i)) {
+  for(var i in metrics) {
+    if(metrics.hasOwnProperty(i)) {
       if(i === 'gauges') {
-        for(var j in out[i]) {
-          if(out[i].hasOwnProperty(j)) {
+        for(var j in metrics[i]) {
+          if(metrics[i].hasOwnProperty(j)) {
             var post_count = extend_post_data(stream_count, stream_limit, data);
             data[post_count].streams.push({
               streamName: globalPrefix + '.' + i + '.' + j,
-              point: out[i][j]
+              point: metrics[i][j]
             });
             stream_count +=1;
           }
         }
       } else if(i === 'counters') {
-        for(var j in out[i]) {
-          if(out[i].hasOwnProperty(j)) {
+        for(var j in metrics[i]) {
+          if(metrics[i].hasOwnProperty(j)) {
             var post_count = extend_post_data(stream_count, stream_limit, data);
             data[post_count].streams.push({
               streamName: globalPrefix + '.' + i + '.' + j + '.count',
-              point: out[i][j]
+              point: metrics[i][j]
             });
             stream_count += 1;
           }
         }
       } else if(i === 'counter_rates') {
-        for(var j in out[i]) {
-          if(out[i].hasOwnProperty(j)) {
+        for(var j in metrics[i]) {
+          if(metrics[i].hasOwnProperty(j)) {
             var post_count = extend_post_data(stream_count, stream_limit, data);
             data[post_count].streams.push({
               streamName: globalPrefix + '.counters.' + j + '.rate',
-              point: out[i][j]
+              point: metrics[i][j]
             });
             stream_count += 1;
           }
@@ -138,6 +107,8 @@ LeftronicBackend.prototype.flush = function(timestamp, metrics) {
   (function send_data() {
     if(data.length > 0) {
       console.log('Sending POST data (' + (data_send_count + 1) + '/' + data.length + ') ...');
+      console.log(util.inspect(data, false, 5, true));
+  } else {
       self.client.sendData(data[data_send_count], function(err, res, body) {
         console.log(err || body);
         data_send_count += 1;
